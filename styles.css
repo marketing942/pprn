@@ -1,0 +1,1248 @@
+/* =========================================================
+   CPPEM · AULÃO DE VÉSPERA — POLÍCIA PENAL DO RIO GRANDE DO NORTE
+   -----------------------------------------------------
+   Sistema visual herdado da Operação Alvorada / Combos
+   Unificados: Oxanium + Rajdhani, ouro #AF9256 sobre preto
+   #0A0A0B, fios de 1px em ouro translúcido e cantos
+   chanfrados de operação.
+
+   Esta é uma página de EVENTO com data marcada, não um
+   catálogo. Três consequências no CSS:
+
+   1. O relógio (.crono) é a peça que substitui o medalhão
+      de brasões das outras landings — o que sustenta a
+      página aqui é o tempo que falta, não o produto.
+   2. A grade (.grade) são duas linhas do tempo verticais,
+      manhã e tarde, e não uma grade de cards: a ordem das
+      aulas é informação, e cards lado a lado a destroem.
+   3. O selo (.selo) traz o brasão da PPRN recortado por
+      scripts/recortar-brasao.py, com a sigla "PP / RN" como
+      reserva caso o arquivo não carregue.
+   ========================================================= */
+
+/* ─── RESET ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── TOKENS ───────────────────────────────────────────── */
+:root {
+  --gold:        #AF9256;
+  --gold-light:  #C9AE7A;
+  --gold-pale:   #F0DCB0;
+  --gold-dark:   #8A7040;
+  --gold-deep:   #5E4B29;
+
+  --bg:   #0A0A0B;
+  --bg-2: #111115;
+  --bg-3: #18181E;
+  --bg-4: #1F1F28;
+
+  --border:        rgba(175,146,86,.18);
+  --border-soft:   rgba(175,146,86,.10);
+  --border-active: rgba(175,146,86,.55);
+
+  --text:      #E8E4D9;
+  --text-dim:  #ADA99B;
+  --text-mute: #87847A;
+
+  --danger: #C25B52;
+  --wa:     #25D366;
+  --wa-dk:  #0E7A63;
+
+  /* Assinatura da Polícia Penal. É de SUSSURRO, como os tons de combo das
+     outras landings: entra em halos, no aro do selo e no clarão de fundo —
+     nunca em texto corrido ou botão. O sistema continua sendo o ouro. */
+  --penal: #6E8C6A;
+  /* Brasa: única cor quente da página. Só no relógio e no selo de desconto,
+     que são as duas peças com prazo. */
+  --ember: #C4703F;
+
+  --font-title: 'Oxanium', system-ui, sans-serif;
+  --font-ui:    'Rajdhani', system-ui, sans-serif;
+
+  --nav-h: 76px;
+  --ease:  cubic-bezier(.4,0,.2,1);
+  --t:     .28s var(--ease);
+
+  --maxw: 1180px;
+}
+
+/* ─── BASE ─────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--nav-h) + 16px);
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.65;
+  overflow-x: hidden;
+  position: relative;
+}
+/* grão fino: dá peso de impressão ao preto chapado. Fica acima do conteúdo
+   (z-index 210) e abaixo de navbar/dock/float. */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 210; pointer-events: none;
+  opacity: .13; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+/* height:auto é obrigatório: os <img> carregam width/height para reservar
+   espaço e evitar layout shift, e sem isto o atributo height venceria e
+   esticaria a imagem verticalmente. */
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; }
+strong, b { font-weight: 700; color: var(--text); }
+::selection { background: var(--gold); color: #0B0A08; }
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #0d0d0f; }
+::-webkit-scrollbar-thumb { background: #2a2618; border: 2px solid #0d0d0f; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold-deep); }
+
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+/* ─── LAYOUT ───────────────────────────────────────────── */
+.container { width: min(100% - 44px, var(--maxw)); margin-inline: auto; }
+.center { text-align: center; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Os dois clarões diagonais existem contra o "preto chapado": sem eles cada
+   seção é um retângulo de #0A0A0B liso e a página lê seca entre um bloco e
+   outro. São largos e fracos de propósito — não se enxerga o degradê,
+   enxerga-se que o fundo tem profundidade. */
+.section {
+  position: relative; padding: 100px 0; z-index: 2;
+  background:
+    radial-gradient(900px 460px at 80% 6%,  rgba(196,112,63,.055), transparent 68%),
+    radial-gradient(780px 420px at 14% 94%, rgba(175,146,86,.045), transparent 70%);
+}
+.section > .container { position: relative; z-index: 2; }
+.section--alt {
+  background:
+    radial-gradient(860px 440px at 18% 8%,  rgba(110,140,106,.055), transparent 68%),
+    radial-gradient(760px 400px at 86% 92%, rgba(175,146,86,.05), transparent 70%),
+    linear-gradient(180deg, var(--bg), #0d0d11 45%, var(--bg));
+}
+
+/* ─── MARCAS D'ÁGUA ────────────────────────────────────────
+   O brasão da PPRN entra pela direita nas seções planas e o leão do CPPEM
+   pela esquerda nas alternadas. É o que dá profundidade ao preto chapado sem
+   virar papel de parede. A máscara vertical apaga a marca perto das emendas
+   para uma seção não "costurar" na outra. */
+.section::before, .section--alt::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+}
+/* marca-pprn, e NÃO brasao-pprn: o brasão oficial é azul, verde e dourado e,
+   mesmo a 6% de opacidade, jogava manchas de cor na direita da seção — a
+   única coisa fora da paleta na página inteira. O arquivo marca-* é o mesmo
+   desenho remapeado para a rampa de ouro (scripts/recortar-brasao.py), e some
+   no preto como as outras texturas. */
+.section::before {
+  background: url('public/marca-pprn.webp') calc(100% + 150px) 50% / auto 560px no-repeat;
+  opacity: .055;
+}
+/* O leão é um desenho grande e de traço grosso: na mesma opacidade da marca
+   do brasão ele dominava as seções mais vazias (o FAQ, sobretudo), onde não
+   há card nenhum competindo com ele. Mais recuado e mais apagado, volta a
+   ser textura. */
+.section--alt::before {
+  background: url('public/emblema-leao.webp') -290px 50% / auto 620px no-repeat;
+  opacity: .032;
+}
+/* fios de ouro nas duas emendas, num único pseudo */
+.section--alt::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, var(--border-active), transparent) top    / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, var(--border-active), transparent) bottom / 100% 1px no-repeat;
+}
+
+/* ─── TIPOGRAFIA DE SEÇÃO ──────────────────────────────── */
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-size: 11px; font-weight: 700; letter-spacing: 5px;
+  text-transform: uppercase; color: var(--gold);
+}
+.eyebrow::before, .eyebrow::after {
+  content: ''; width: 34px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold));
+}
+.eyebrow::after { background: linear-gradient(90deg, var(--gold), transparent); }
+
+.section__head { text-align: center; max-width: 920px; margin: 0 auto 52px; }
+.section__title {
+  font-family: var(--font-title);
+  font-size: clamp(30px, 4.6vw, 52px);
+  font-weight: 800; line-height: 1.04; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text); margin: 16px 0 0;
+}
+.section__title::after {
+  content: ''; display: block; width: 78px; height: 2px; margin: 22px auto 0;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.section__lead {
+  max-width: 740px; margin: 22px auto 0; color: var(--text-dim);
+  font-size: 17px; line-height: 1.7;
+}
+.section__lead strong { color: var(--gold-light); }
+.gold {
+  background: linear-gradient(180deg, var(--gold-pale), var(--gold) 55%, var(--gold-dark));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ─── BRILHO (shine) ───────────────────────────────────── */
+@keyframes shine-sweep {
+  0%   { transform: translateX(-160%) skewX(-22deg); }
+  55%  { transform: translateX(320%)  skewX(-22deg); }
+  100% { transform: translateX(320%)  skewX(-22deg); }
+}
+.shine { position: relative; overflow: hidden; }
+.shine::after {
+  content: ''; position: absolute; top: -60%; left: 0;
+  width: 42%; height: 220%; z-index: 3; pointer-events: none;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(255,255,255,.10) 35%,
+    rgba(255,255,255,.55) 50%, rgba(255,255,255,.10) 65%, transparent 100%);
+  animation: shine-sweep 4.6s var(--ease) infinite;
+}
+.shine--slow::after { animation-duration: 6.5s; width: 34%; }
+
+/* ─── BOTÕES ───────────────────────────────────────────── */
+.btn {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  gap: 12px; height: 52px; padding: 0 30px;
+  font-size: 13.5px; font-weight: 700; letter-spacing: 2.4px;
+  text-transform: uppercase; white-space: nowrap; text-align: center;
+  border: 0; cursor: pointer; overflow: hidden; isolation: isolate;
+  clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+  transition: transform var(--t), filter var(--t), background var(--t), color var(--t);
+}
+.btn > span { position: relative; z-index: 2; }
+.btn:active { transform: translateY(1px) scale(.995); }
+
+.btn--gold {
+  color: #0B0A08;
+  background: linear-gradient(168deg, var(--gold-pale) 0%, var(--gold-light) 22%, var(--gold) 55%, var(--gold-dark) 100%);
+  filter: drop-shadow(0 10px 24px rgba(175,146,86,.30));
+}
+.btn--gold::before {
+  content: ''; position: absolute; inset: 1px; z-index: 1;
+  background: linear-gradient(180deg, rgba(255,255,255,.42), transparent 45%);
+  clip-path: inherit; pointer-events: none;
+}
+.btn--gold:hover {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 16px 32px rgba(175,146,86,.52)) brightness(1.06);
+}
+
+.btn--ghost {
+  color: var(--gold-light);
+  background: rgba(175,146,86,.05);
+  box-shadow: inset 0 0 0 1px var(--border-active);
+}
+.btn--ghost:hover {
+  color: #0B0A08;
+  background: linear-gradient(168deg, var(--gold-light), var(--gold-dark));
+  transform: translateY(-2px);
+}
+
+.btn--lg { height: 62px; padding: 0 44px; font-size: 15px; letter-spacing: 3px; }
+.btn--block { width: 100%; }
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
+.progress {
+  position: fixed; top: 0; left: 0; height: 2px; width: 0; z-index: 320;
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold), var(--gold-pale));
+  box-shadow: 0 0 12px rgba(175,146,86,.7);
+}
+
+.header {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h); z-index: 300;
+  display: flex; align-items: center;
+  background: linear-gradient(180deg, rgba(10,10,11,.72), rgba(10,10,11,.30));
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  transition: height var(--t), background var(--t), box-shadow var(--t);
+}
+.header::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-active) 20%, var(--border-active) 80%, transparent);
+  opacity: .55; transition: opacity var(--t);
+}
+.header.is-stuck {
+  height: 66px; background: rgba(9,9,10,.94);
+  box-shadow: 0 14px 40px -18px rgba(0,0,0,.95);
+}
+.header.is-stuck::after { opacity: 1; }
+
+.header__inner {
+  display: flex; align-items: center; gap: 26px;
+  width: min(100% - 36px, 1320px); margin-inline: auto;
+}
+
+/* O PNG já vem com alfa, então a própria logo serve de máscara da caixa: o
+   brilho varre só o desenho, sem o retângulo fantasma que aparece quando a
+   passada de luz ocupa o bloco inteiro. */
+.brand { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.brand__logo {
+  position: relative; display: block; width: 158px; overflow: hidden;
+  transition: width var(--t);
+  -webkit-mask-image: url('public/logo-cppem.png'); mask-image: url('public/logo-cppem.png');
+  -webkit-mask-size: 100% 100%;   mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+}
+.brand__logo img { width: 100%; height: auto; }
+.header.is-stuck .brand__logo { width: 132px; }
+
+.nav { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.nav a {
+  position: relative; padding: 10px 14px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text-dim); transition: color var(--t);
+}
+.nav a::after {
+  content: ''; position: absolute; left: 14px; right: 14px; bottom: 4px; height: 1px;
+  background: var(--gold); transform: scaleX(0); transform-origin: left;
+  transition: transform var(--t);
+}
+.nav a:hover { color: var(--gold-light); }
+.nav a:hover::after { transform: scaleX(1); }
+
+/* A pílula da direita conta os DIAS que faltam, e não uma quantidade de
+   vagas como nas outras landings: numa página de evento o número que importa
+   é o prazo. O script escreve o conteúdo do <b>; o HTML traz um valor
+   estático para a barra não nascer vazia. */
+.nav-count {
+  display: inline-flex; align-items: center; gap: 9px;
+  height: 40px; padding: 0 16px; margin-left: 8px;
+  background: rgba(175,146,86,.07);
+  box-shadow: inset 0 0 0 1px var(--border);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text-dim); white-space: nowrap;
+}
+.nav-count b { font-family: var(--font-title); color: var(--gold-light); font-size: 14px; letter-spacing: 1px; }
+.nav-count i {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--gold);
+  box-shadow: 0 0 0 4px rgba(175,146,86,.16); animation: pulse 2.2s infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(175,146,86,.16); }
+  50%     { box-shadow: 0 0 0 8px rgba(175,146,86,.03); }
+}
+
+/* =========================================================
+   HERO
+   ========================================================= */
+.hero {
+  position: relative; z-index: 2;
+  min-height: 100svh; display: flex; align-items: center;
+  padding: calc(var(--nav-h) + 44px) 0 68px;
+  overflow: hidden; text-align: center;
+}
+.hero__bg { position: absolute; inset: -6% 0 0; will-change: transform; }
+.hero__bg i {
+  position: absolute; inset: 0; display: block;
+  background: url('public/bgatirador.webp') center 30% / cover no-repeat;
+  transform: scale(1.04);
+  opacity: .28;
+  filter: grayscale(.55) contrast(1.06) brightness(.86);
+}
+/* Véu vertical: a hero é centralizada, então escurecer só um dos lados
+   jogaria o texto para fora do eixo de leitura. */
+.hero__veil {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 42%, rgba(10,10,11,.38) 0%, rgba(10,10,11,.87) 58%, rgba(10,10,11,.97) 100%),
+    linear-gradient(180deg, rgba(10,10,11,.92) 0%, transparent 24%, transparent 62%, var(--bg) 100%);
+}
+.hero__dawn {
+  position: absolute; left: 50%; bottom: -32%; transform: translateX(-50%);
+  width: 130%; height: 60%; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 100%, rgba(175,146,86,.28), rgba(175,146,86,.06) 42%, transparent 70%);
+}
+.hero__grid {
+  position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image:
+    linear-gradient(rgba(175,146,86,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(175,146,86,.055) 1px, transparent 1px);
+  background-size: 74px 74px;
+  mask-image: radial-gradient(ellipse at 50% 45%, #000 8%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 45%, #000 8%, transparent 70%);
+}
+.hero__scan {
+  position: absolute; inset: 0; pointer-events: none; opacity: .2;
+  background: repeating-linear-gradient(180deg, rgba(255,255,255,.05) 0 1px, transparent 1px 4px);
+}
+.hero__inner { position: relative; z-index: 4; }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 11px;
+  height: 38px; padding: 0 18px; margin-bottom: 22px;
+  background: rgba(175,146,86,.08);
+  box-shadow: inset 0 0 0 1px var(--border-active);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  font-size: 11.5px; font-weight: 700; letter-spacing: 2.6px;
+  text-transform: uppercase; color: var(--gold-light);
+}
+.tag .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); animation: pulse 2.2s infinite; }
+
+.hero__title {
+  font-family: var(--font-title);
+  font-size: clamp(34px, 5.8vw, 66px);
+  font-weight: 800; line-height: 1.0; letter-spacing: -.5px;
+  text-transform: uppercase; color: var(--text);
+  text-shadow: 0 8px 40px rgba(0,0,0,.75);
+  max-width: 20ch; margin-inline: auto;
+}
+.hero__sub {
+  margin: 22px auto 0; max-width: 60ch;
+  font-size: 18.5px; line-height: 1.68; color: var(--text-dim);
+}
+.hero__sub strong { color: var(--gold-light); font-weight: 700; }
+
+.hero__cta { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 32px; }
+.hero__nota {
+  display: block; margin-top: 16px;
+  font-size: 12px; font-weight: 700; letter-spacing: 2.4px;
+  text-transform: uppercase; color: var(--text-mute);
+}
+
+/* =========================================================
+   SELO DA PPRN — o medalhão da hero
+   ---------------------------------------------------------
+   O brasão oficial da Polícia Penal do RN dentro do mesmo hexágono chanfrado
+   dos outros blocos, com aro de ouro e o halo verde da Penal.
+
+   O arquivo é gerado por scripts/recortar-brasao.py, que tira o fundo branco
+   do JPEG original. Se ele deixar de carregar, o script.js marca o
+   .selo__core como .is-fallback e a sigla "PP / RN" entra no lugar, no mesmo
+   ponto e com o mesmo peso — a página nunca mostra imagem quebrada.
+
+   O hexágono tem bico curto (18%/82%, não 25%/75%) pelo mesmo motivo dos
+   outros projetos: com o bico de um hexágono regular a faixa de largura
+   cheia é estreita demais e o desenho de dentro precisa encolher.
+
+   A caixa do brasão é QUADRADA (74%×74%) com object-fit: contain. O brasão é
+   mais alto que largo, e é o contain que o encaixa sem deformar — trocar por
+   cover cortaria o "PENAL" da tarja de baixo.
+   ========================================================= */
+.selo {
+  position: relative; width: clamp(190px, 24vw, 258px); aspect-ratio: 1 / 1;
+  margin: 34px auto 0; container-type: inline-size;
+}
+.selo__aro {
+  position: absolute; inset: 0;
+  background: conic-gradient(from 200deg,
+    var(--gold-deep), var(--gold) 18%, var(--gold-pale) 30%,
+    var(--gold-dark) 52%, var(--gold) 72%, var(--gold-deep) 100%);
+  clip-path: polygon(50% 0, 100% 18%, 100% 82%, 50% 100%, 0 82%, 0 18%);
+  filter: drop-shadow(0 18px 46px var(--halo, rgba(110,140,106,.30)));
+}
+.selo__core {
+  position: absolute; inset: 4px;
+  display: grid; place-items: center; gap: 0;
+  background:
+    radial-gradient(120% 90% at 50% 12%, rgba(110,140,106,.20), transparent 62%),
+    linear-gradient(180deg, var(--bg-3), #0B0B0E);
+  clip-path: polygon(50% 0, 100% 18%, 100% 82%, 50% 100%, 0 82%, 0 18%);
+}
+.selo__core img {
+  width: 74%; height: 74%; object-fit: contain;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.55));
+}
+/* O bloco tipográfico só existe quando a imagem falha. */
+.selo__fb { display: none; }
+.selo__core.is-fallback img { display: none; }
+.selo__core.is-fallback .selo__fb { display: block; }
+
+.selo__sigla {
+  font-family: var(--font-title); font-weight: 800; line-height: .88;
+  font-size: 34cqw; letter-spacing: -1px;
+  background: linear-gradient(180deg, var(--gold-pale), var(--gold) 54%, var(--gold-dark));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.selo__uf {
+  display: block; margin-top: 4cqw;
+  font-family: var(--font-title); font-size: 9cqw; font-weight: 700;
+  letter-spacing: 3cqw; text-indent: 3cqw; color: var(--gold-light);
+}
+.selo__linha {
+  display: block; width: 42cqw; height: 1px; margin: 5cqw auto;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.selo__nome {
+  display: block; max-width: 74cqw;
+  font-size: 6.2cqw; font-weight: 700; line-height: 1.4;
+  letter-spacing: 1.6cqw; text-transform: uppercase; color: var(--text-mute);
+}
+/* faísca que corre o aro, igual à dos medalhões das outras landings */
+.selo__faisca {
+  position: absolute; top: 6%; left: 50%; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gold-pale); box-shadow: 0 0 14px 3px rgba(240,220,176,.75);
+  transform-origin: 0 calc(44cqw);
+  animation: selo-gira 9s linear infinite;
+}
+@keyframes selo-gira { to { transform: rotate(360deg); } }
+
+.selo__placa {
+  position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%);
+  padding: 7px 16px; white-space: nowrap;
+  background: linear-gradient(180deg, var(--bg-4), var(--bg-2));
+  box-shadow: inset 0 0 0 1px var(--border-active);
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  font-family: var(--font-title); font-size: 12px; font-weight: 700;
+  letter-spacing: 2.2px; text-transform: uppercase; color: var(--gold-light);
+}
+
+/* ─── FICHA (números da hero) ──────────────────────────── */
+.ficha { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 52px; }
+.ficha__item {
+  position: relative; padding: 18px 16px 16px; text-align: center;
+  background: linear-gradient(180deg, rgba(24,24,30,.78), rgba(12,12,15,.86));
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 0 1px var(--border);
+  clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
+  transition: background var(--t), box-shadow var(--t), transform var(--t);
+}
+.ficha__item:hover {
+  transform: translateY(-4px);
+  box-shadow: inset 0 0 0 1px var(--border-active);
+  background: linear-gradient(180deg, rgba(31,31,40,.9), rgba(14,14,18,.92));
+}
+.ficha__item b {
+  display: block; font-family: var(--font-title);
+  font-size: clamp(24px, 3.4vw, 34px); font-weight: 800; line-height: 1;
+  letter-spacing: .5px; font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, var(--gold-pale), var(--gold) 52%, var(--gold-dark));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.ficha__item span {
+  display: block; margin-top: 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: 2.4px;
+  text-transform: uppercase; color: var(--text-mute); line-height: 1.5;
+}
+
+.scroller {
+  position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);
+  width: 22px; height: 36px; border: 1px solid var(--border-active); border-radius: 12px; z-index: 4;
+}
+.scroller i {
+  position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; border-radius: 2px;
+  background: var(--gold); transform: translateX(-50%); animation: scrolldot 1.9s infinite;
+}
+@keyframes scrolldot { 0%{opacity:0;top:7px} 40%{opacity:1} 80%{opacity:0;top:20px} 100%{opacity:0} }
+
+/* =========================================================
+   FAIXA CORRIDA
+   ========================================================= */
+.strip {
+  position: relative; z-index: 2; overflow: hidden;
+  background: linear-gradient(180deg, #0e0e11, #131317);
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  padding: 15px 0;
+}
+.strip__track { display: flex; gap: 46px; width: max-content; animation: marquee 44s linear infinite; }
+.strip__track span {
+  display: inline-flex; align-items: center; gap: 46px;
+  font-family: var(--font-title); font-size: 12.5px; font-weight: 700;
+  letter-spacing: 5px; text-transform: uppercase; color: var(--gold-dark);
+  white-space: nowrap;
+}
+.strip__track span::after { content: '◆'; font-size: 7px; color: var(--gold); letter-spacing: 0; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* =========================================================
+   CRONÔMETRO — a peça que sustenta a página
+
+   É o equivalente, aqui, ao medalhão de brasões das outras landings: numa
+   página de evento a informação que decide a compra é quanto tempo falta.
+
+   Duas decisões que não são estilo:
+
+   1. `font-variant-numeric: tabular-nums` mais uma largura mínima em `ch`.
+      Sem isso os dígitos têm larguras diferentes e a caixa dos segundos
+      pula de tamanho a cada tique — a página inteira treme uma vez por
+      segundo.
+   2. Os quatro blocos são `<time>`/`<b>` preenchidos pelo script, mas o HTML
+      já nasce com "--". Um cronômetro vazio por meio segundo lê como erro.
+   ========================================================= */
+/* A margem negativa faz a caixa montar sobre o fim da hero: o cronômetro
+   precisa aparecer antes de a dobra terminar de sair da tela, senão ele vira
+   só mais um bloco no meio da página. O padding de baixo é o respiro até a
+   faixa corrida, que vem logo em seguida. */
+.crono-wrap {
+  position: relative; z-index: 2;
+  margin-top: -34px; padding: 0 0 52px;
+}
+.crono {
+  position: relative;
+  width: min(100% - 44px, 860px); margin-inline: auto;
+  padding: 30px 28px 26px; text-align: center;
+  background:
+    radial-gradient(120% 140% at 50% 0%, rgba(196,112,63,.14), transparent 60%),
+    linear-gradient(180deg, var(--bg-3), var(--bg-2));
+  box-shadow: inset 0 0 0 1px var(--border-active), 0 26px 60px -30px #000;
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
+}
+.crono__label {
+  display: block; margin-bottom: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: 4.4px;
+  text-transform: uppercase; color: var(--gold);
+}
+.crono__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.crono__cel {
+  padding: 16px 8px 12px;
+  background: linear-gradient(180deg, rgba(31,31,40,.9), rgba(11,11,14,.9));
+  box-shadow: inset 0 0 0 1px var(--border);
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 11px 100%, 0 calc(100% - 11px));
+}
+.crono__cel b {
+  display: block; min-width: 2.4ch;
+  font-family: var(--font-title); font-size: clamp(30px, 6vw, 52px);
+  font-weight: 800; line-height: 1; letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, var(--gold-pale), var(--gold) 52%, var(--gold-dark));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.crono__cel span {
+  display: block; margin-top: 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: 2.6px;
+  text-transform: uppercase; color: var(--text-mute);
+}
+.crono__pe {
+  display: block; margin-top: 18px;
+  font-size: 13px; letter-spacing: 1.4px; color: var(--text-dim);
+}
+.crono__pe strong { color: var(--gold-light); }
+/* Estado de evento encerrado. O script troca o miolo do cronômetro por esta
+   mensagem quando a data passa — uma contagem parada em zero, ou pior, com
+   números negativos, é a forma mais rápida de a página perder credibilidade
+   sozinha depois do dia do evento. */
+.crono.is-encerrado .crono__grid { display: none; }
+.crono__encerrado { display: none; }
+.crono.is-encerrado .crono__encerrado {
+  display: block;
+  font-family: var(--font-title); font-size: clamp(20px, 3.4vw, 30px);
+  font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--gold-light);
+}
+
+/* =========================================================
+   CARDS GENÉRICOS
+   ========================================================= */
+.cards { display: grid; gap: 18px; }
+.cards--3 { grid-template-columns: repeat(3, 1fr); }
+.cards--4 { grid-template-columns: repeat(4, 1fr); }
+
+.card {
+  position: relative; padding: 34px 30px 32px; overflow: hidden;
+  background: linear-gradient(180deg, var(--bg-3), var(--bg-2));
+  box-shadow: inset 0 0 0 1px var(--border);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+  transition: transform var(--t), box-shadow var(--t);
+}
+/* brilho que segue o cursor */
+.card::before {
+  content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity var(--t);
+  background: radial-gradient(340px circle at var(--mx,50%) var(--my,50%), rgba(175,146,86,.13), transparent 60%);
+}
+.card:hover { transform: translateY(-5px); box-shadow: inset 0 0 0 1px var(--border-active); }
+.card:hover::before { opacity: 1; }
+.card > * { position: relative; z-index: 1; }
+
+.card .ico {
+  position: relative; width: 60px; height: 60px; margin-bottom: 22px;
+  display: grid; place-items: center;
+  background: linear-gradient(160deg, rgba(175,146,86,.20), rgba(175,146,86,.03));
+  box-shadow: inset 0 0 0 1px var(--border-active);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+.card .ico svg {
+  width: 28px; height: 28px; fill: none; stroke: var(--gold);
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.card h3 {
+  font-family: var(--font-title); font-size: 19px; font-weight: 700;
+  letter-spacing: 1.4px; text-transform: uppercase; color: var(--text); margin-bottom: 10px;
+}
+.card p { color: var(--text-dim); font-size: 16px; line-height: 1.66; }
+.card p strong { color: var(--gold-light); }
+.card__n {
+  position: absolute; top: 18px; right: 22px;
+  font-family: var(--font-title); font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; color: rgba(175,146,86,.28);
+}
+
+.section .center { margin-top: 48px; }
+
+/* =========================================================
+   GRADE DO DIA — linha do tempo vertical
+
+   É uma LINHA DO TEMPO, e não uma grade de cards, porque a ordem das aulas é
+   informação: quem chega às 14h precisa saber o que já passou. Cards lado a
+   lado destroem essa leitura — o olho lê em Z e a sequência se perde.
+
+   O trilho é um pseudo do <ol> (não uma borda de cada item), para a linha
+   correr contínua e não emendar entre as aulas. A bolinha de cada item fica
+   POR CIMA do trilho, com o fundo da página, para o trilho parecer passar
+   por trás dela.
+   ========================================================= */
+/* As duas colunas do dia. O corte é no intervalo, então elas são manhã e
+   tarde — uma divisão que já existe no dia, e não uma quebra arbitrária no
+   meio da lista. Empilhada, a grade passava de uma tela inteira e empurrava a
+   oferta para longe. */
+.grade-dupla {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 22px 34px;
+  max-width: 1000px; margin-inline: auto; align-items: start;
+}
+.grade__turno-titulo {
+  display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; padding-left: 4px;
+  font-family: var(--font-title); font-size: 13px; font-weight: 800;
+  letter-spacing: 3.4px; text-transform: uppercase; color: var(--gold);
+}
+.grade__turno-titulo span {
+  font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--text-mute);
+}
+/* o fio que fecha o título até a borda da coluna */
+.grade__turno-titulo::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border-active), transparent);
+}
+
+.grade {
+  position: relative; list-style: none; padding-left: 0;
+}
+.grade::before {
+  content: ''; position: absolute; left: 58px; top: 10px; bottom: 10px; width: 1px;
+  background: linear-gradient(180deg, transparent, var(--border-active) 8%, var(--border-active) 92%, transparent);
+}
+.grade__item {
+  position: relative; display: grid;
+  grid-template-columns: 46px 1fr; align-items: center; gap: 0 24px;
+  padding: 5px 0;
+}
+.grade__hora {
+  text-align: right;
+  font-family: var(--font-title); font-size: 15px; font-weight: 800;
+  letter-spacing: .5px; font-variant-numeric: tabular-nums; color: var(--gold-light);
+}
+/* a bolinha do trilho */
+.grade__item::before {
+  content: ''; position: absolute; left: 58px; top: 50%;
+  width: 11px; height: 11px; margin: -5.5px 0 0 -5px; border-radius: 50%;
+  background: var(--bg); box-shadow: 0 0 0 1px var(--gold-dark), inset 0 0 0 2px var(--bg);
+  transition: background var(--t), box-shadow var(--t);
+}
+.grade__item:hover::before {
+  background: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 14px 2px rgba(175,146,86,.55), inset 0 0 0 2px var(--bg);
+}
+.grade__box {
+  position: relative; padding: 11px 18px; min-height: 58px;
+  background: linear-gradient(180deg, var(--bg-3), var(--bg-2));
+  box-shadow: inset 0 0 0 1px var(--border);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  transition: transform var(--t), box-shadow var(--t);
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+}
+.grade__item:hover .grade__box {
+  transform: translateX(5px);
+  box-shadow: inset 0 0 0 1px var(--border-active);
+}
+/* line-height apertado e não 1.3: em duas colunas, "História do RN e Aspectos
+   Geoeconômicos" ocupa duas linhas, e é o único item que ocupa. O min-height
+   da caixa é o que mantém todas as linhas com a mesma altura mesmo assim. */
+.grade__mat {
+  font-family: var(--font-title); font-size: 15px; font-weight: 700;
+  letter-spacing: .6px; text-transform: uppercase; color: var(--text); line-height: 1.25;
+}
+/* O horário repetido dentro da caixa. No desktop ele não existe — quem manda
+   é a coluna da esquerda. Ele só entra no empilhamento do mobile, onde a
+   coluna some (ver o bloco de 720px). */
+.grade__hora--mob { display: none; }
+.grade__n {
+  flex-shrink: 0; width: 22px;
+  font-family: var(--font-title); font-size: 11.5px; font-weight: 700;
+  letter-spacing: 1px; color: rgba(175,146,86,.42); font-variant-numeric: tabular-nums;
+}
+/* O intervalo não é aula: perde a caixa e vira só uma linha tracejada, para o
+   olho contar nove blocos cheios e um vazio em vez de dez aulas. */
+.grade__item--pausa .grade__box {
+  background: none; box-shadow: none; clip-path: none; min-height: 0;
+  border-top: 1px dashed var(--border); border-bottom: 1px dashed var(--border);
+  padding: 9px 18px;
+}
+.grade__item--pausa .grade__mat { color: var(--text-mute); font-size: 13px; letter-spacing: 2.4px; }
+.grade__item--pausa:hover .grade__box { transform: none; }
+
+.grade__nota {
+  display: block; max-width: 800px; margin: 30px auto 0; text-align: center;
+  font-size: 13px; letter-spacing: 1px; color: var(--text-mute);
+}
+
+/* =========================================================
+   O LOCAL
+   ========================================================= */
+.local {
+  display: grid; grid-template-columns: 1.05fr .95fr; gap: 18px;
+  max-width: 1000px; margin-inline: auto;
+}
+.local__col {
+  position: relative; padding: 34px 32px;
+  background: linear-gradient(180deg, var(--bg-3), var(--bg-2));
+  box-shadow: inset 0 0 0 1px var(--border);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+}
+.local__col h3 {
+  font-family: var(--font-title); font-size: 20px; font-weight: 800;
+  letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 6px;
+}
+.local__tipo {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 18px;
+  font-size: 11px; font-weight: 700; letter-spacing: 2.6px;
+  text-transform: uppercase; color: var(--gold);
+}
+.local__tipo::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--gold); box-shadow: 0 0 0 4px rgba(175,146,86,.14);
+}
+.local__col p { color: var(--text-dim); font-size: 16px; line-height: 1.7; }
+.local__col p + p { margin-top: 12px; }
+.local__col strong { color: var(--gold-light); }
+.local__lista { list-style: none; margin-top: 16px; display: grid; gap: 9px; }
+.local__lista li {
+  position: relative; padding-left: 26px; color: var(--text-dim); font-size: 15.5px; line-height: 1.6;
+}
+.local__lista li::before {
+  content: ''; position: absolute; left: 0; top: 9px; width: 11px; height: 6px;
+  border-left: 2px solid var(--gold); border-bottom: 2px solid var(--gold);
+  transform: rotate(-45deg);
+}
+.local__link {
+  display: inline-flex; align-items: center; gap: 9px; margin-top: 22px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--gold-light);
+  border-bottom: 1px solid var(--border-active); padding-bottom: 3px;
+  transition: color var(--t), border-color var(--t);
+}
+.local__link:hover { color: var(--gold-pale); border-color: var(--gold-pale); }
+.local__link svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+
+/* =========================================================
+   OFERTA — o bloco de preço
+
+   Todos os CTAs da página levam ao MESMO checkout. Este bloco é o único lugar
+   onde o preço aparece por extenso; os outros pontos (dock e CTA final) só
+   repetem o valor curto. Quando o preço mudar, os quatro lugares listados no
+   README precisam andar juntos.
+   ========================================================= */
+.oferta {
+  position: relative; max-width: 620px; margin-inline: auto;
+  padding: 42px 38px 38px; text-align: center; overflow: hidden;
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(175,146,86,.16), transparent 62%),
+    linear-gradient(180deg, var(--bg-3), var(--bg-2));
+  box-shadow: inset 0 0 0 1px var(--border-active), 0 30px 70px -34px #000;
+  clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 26px 100%, 0 calc(100% - 26px));
+}
+.oferta__faixa {
+  position: absolute; top: 26px; right: -46px; width: 190px; padding: 7px 0;
+  transform: rotate(38deg);
+  background: linear-gradient(90deg, var(--ember), #A85830);
+  font-family: var(--font-title); font-size: 12px; font-weight: 800;
+  letter-spacing: 2.4px; text-transform: uppercase; color: #FFF3E4;
+  box-shadow: 0 8px 22px -8px rgba(0,0,0,.9);
+}
+.oferta__nome {
+  font-family: var(--font-title); font-size: 13px; font-weight: 700;
+  letter-spacing: 3.4px; text-transform: uppercase; color: var(--gold);
+}
+.oferta__de {
+  display: block; margin-top: 20px;
+  font-size: 16px; letter-spacing: 1px; color: var(--text-mute);
+}
+.oferta__de s { text-decoration-color: var(--danger); text-decoration-thickness: 2px; }
+.oferta__por {
+  display: flex; align-items: flex-start; justify-content: center; gap: 6px;
+  margin-top: 2px; line-height: 1;
+}
+.oferta__cifrao {
+  margin-top: 12px;
+  font-family: var(--font-title); font-size: 26px; font-weight: 700; color: var(--gold);
+}
+.oferta__valor {
+  font-family: var(--font-title); font-size: clamp(58px, 12vw, 92px);
+  font-weight: 800; letter-spacing: -2px; font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, var(--gold-pale), var(--gold) 50%, var(--gold-dark));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.oferta__parcela {
+  display: block; margin-top: 12px;
+  font-family: var(--font-title); font-size: 17px; font-weight: 700;
+  letter-spacing: 1.4px; text-transform: uppercase; color: var(--text);
+}
+.oferta__parcela span { color: var(--gold-light); }
+.oferta .btn { margin-top: 28px; }
+.oferta__seguro {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 20px;
+  margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border-soft);
+  font-size: 11.5px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text-mute);
+}
+.oferta__seguro i {
+  display: inline-flex; align-items: center; gap: 7px; font-style: normal;
+}
+.oferta__seguro svg { width: 14px; height: 14px; fill: none; stroke: var(--gold); stroke-width: 1.7; }
+.oferta__asterisco {
+  display: block; margin-top: 14px;
+  font-size: 12px; line-height: 1.6; color: var(--text-mute);
+}
+
+/* o que o ingresso inclui — lista dentro da seção de oferta */
+.inclui {
+  list-style: none; max-width: 620px; margin: 26px auto 0;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 20px;
+}
+.inclui li {
+  position: relative; padding-left: 28px; text-align: left;
+  color: var(--text-dim); font-size: 15.5px; line-height: 1.5;
+}
+.inclui li::before {
+  content: ''; position: absolute; left: 0; top: 8px; width: 11px; height: 6px;
+  border-left: 2px solid var(--gold); border-bottom: 2px solid var(--gold);
+  transform: rotate(-45deg);
+}
+.inclui strong { color: var(--gold-light); }
+
+/* =========================================================
+   FAQ
+   ========================================================= */
+.faq { max-width: 880px; margin-inline: auto; display: grid; gap: 12px; }
+.faq__item {
+  background: linear-gradient(180deg, var(--bg-3), var(--bg-2));
+  box-shadow: inset 0 0 0 1px var(--border);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  transition: box-shadow var(--t);
+}
+.faq__item[open] { box-shadow: inset 0 0 0 1px var(--border-active); }
+.faq__item summary {
+  position: relative; cursor: pointer; list-style: none;
+  padding: 22px 62px 22px 26px;
+  font-family: var(--font-title); font-size: 16.5px; font-weight: 700;
+  letter-spacing: .8px; text-transform: uppercase; color: var(--text);
+  transition: color var(--t);
+}
+.faq__item summary::-webkit-details-marker { display: none; }
+.faq__item summary:hover { color: var(--gold-light); }
+.faq__item summary::after {
+  content: '+'; position: absolute; right: 24px; top: 50%; transform: translateY(-50%);
+  font-family: var(--font-title); font-size: 24px; font-weight: 400; color: var(--gold);
+  transition: transform var(--t);
+}
+.faq__item[open] summary::after { transform: translateY(-50%) rotate(45deg); }
+.faq__item p { padding: 0 26px 24px; color: var(--text-dim); font-size: 16px; line-height: 1.7; }
+.faq__item strong { color: var(--gold-light); }
+
+/* =========================================================
+   CTA FINAL
+   ========================================================= */
+.final { position: relative; z-index: 2; padding: 108px 0; overflow: hidden; text-align: center; }
+.final::before {
+  content: ''; position: absolute; inset: 0;
+  background: url('public/policiais-operacao.webp') center / cover no-repeat;
+  opacity: .14; filter: grayscale(.6);
+}
+.final::after {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(760px 300px at 50% 110%, rgba(175,146,86,.24), transparent 70%),
+    linear-gradient(180deg, var(--bg) 0%, rgba(10,10,11,.72) 40%, var(--bg) 100%);
+}
+.final__inner { position: relative; z-index: 3; }
+.final .selo { margin: 0 auto 46px; }
+.final h2 {
+  font-family: var(--font-title); font-size: clamp(28px, 4.6vw, 52px); font-weight: 800;
+  line-height: 1.06; letter-spacing: .5px; text-transform: uppercase;
+  text-shadow: 0 10px 40px rgba(0,0,0,.8);
+}
+.final p { margin: 22px auto 34px; max-width: 58ch; color: var(--text-dim); font-size: 17px; }
+.final__note { display: block; margin-top: 18px; font-size: 12.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-mute); }
+
+/* =========================================================
+   RODAPÉ
+   ========================================================= */
+.footer { position: relative; z-index: 2; background: #08080A; border-top: 1px solid var(--border); padding: 62px 0 0; }
+.footer__inner {
+  width: min(100% - 44px, var(--maxw)); margin-inline: auto;
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;
+}
+.footer__logos img { width: 172px; }
+.footer__brand p { margin: 18px 0 20px; color: var(--text-dim); font-size: 15px; max-width: 40ch; line-height: 1.6; }
+.footer__social { display: flex; flex-wrap: wrap; gap: 10px; }
+.footer__social a {
+  width: 38px; height: 38px; display: grid; place-items: center;
+  box-shadow: inset 0 0 0 1px var(--border); color: var(--text-dim);
+  transition: color var(--t), box-shadow var(--t), background var(--t);
+}
+.footer__social a:hover { color: var(--gold); box-shadow: inset 0 0 0 1px var(--border-active); background: rgba(175,146,86,.08); }
+.footer__social svg { width: 17px; height: 17px; fill: currentColor; }
+.footer__col h4 {
+  font-family: var(--font-title); font-size: 12px; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 16px;
+}
+.footer__col a { display: block; padding: 6px 0; color: var(--text-dim); font-size: 15px; transition: color var(--t); }
+.footer__col a:hover { color: var(--gold-light); }
+.footer__bar {
+  margin-top: 52px; padding: 20px 0; border-top: 1px solid var(--border-soft);
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between;
+  width: min(100% - 44px, var(--maxw)); margin-inline: auto;
+  font-size: 13px; color: var(--text-mute);
+}
+/* respiro para a barra fixa do mobile não cobrir o CNPJ */
+@media (max-width: 720px) { .footer__bar { padding-bottom: 96px; } }
+
+/* =========================================================
+   WHATSAPP FLUTUANTE (canto inferior direito)
+   ---------------------------------------------------------
+   Verde da marca, e não ouro: o botão precisa ser reconhecido como WhatsApp
+   em meio segundo, e é a única peça da página que abre mão da paleta por
+   isso. O que o traz de volta ao sistema é o aro de ouro e o mesmo chanfro
+   dos outros blocos.
+   ========================================================= */
+.wa-float {
+  position: fixed; right: 22px; bottom: 22px; z-index: 290;
+  display: inline-flex; align-items: center; gap: 0;
+  height: 60px; padding: 0 8px;
+  background: linear-gradient(158deg, var(--wa) 0%, #1FBF5B 42%, var(--wa-dk) 100%);
+  box-shadow: 0 12px 30px -8px rgba(0,0,0,.8), 0 0 0 1px rgba(240,220,176,.45), 0 0 24px rgba(37,211,102,.28);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  transition: transform var(--t), box-shadow var(--t), filter var(--t);
+}
+.wa-float:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.06);
+  box-shadow: 0 18px 38px -10px rgba(0,0,0,.85), 0 0 0 1px rgba(240,220,176,.8), 0 0 34px rgba(37,211,102,.45);
+}
+.wa-float:active { transform: translateY(0) scale(.98); }
+.wa-float__ico { flex-shrink: 0; width: 44px; display: grid; place-items: center; }
+/* Branco sobre o verde, como a marca usa. O rótulo ao lado continua escuro
+   porque texto pequeno em branco sobre #25D366 não passa de contraste; num
+   desenho sólido e grande como o glifo, passa. */
+.wa-float__ico svg {
+  width: 26px; height: 26px; fill: #fff;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.28));
+}
+.wa-float__txt {
+  max-width: 0; overflow: hidden; white-space: nowrap;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 2.2px;
+  text-transform: uppercase; color: #062B18;
+  transition: max-width .38s var(--ease), padding-right .38s var(--ease);
+}
+.wa-float:hover .wa-float__txt, .wa-float:focus-visible .wa-float__txt {
+  max-width: 220px; padding-right: 14px;
+}
+/* pulso de atenção — anel que sai de trás do botão */
+.wa-float::after {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  clip-path: inherit; background: var(--wa);
+  animation: wa-pulse 2.6s var(--ease) infinite;
+}
+@keyframes wa-pulse {
+  0%   { opacity: .5; transform: scale(1); }
+  70%  { opacity: 0;  transform: scale(1.28); }
+  100% { opacity: 0;  transform: scale(1.28); }
+}
+
+/* =========================================================
+   BARRA FIXA (mobile)
+   ========================================================= */
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 280;
+  display: none; align-items: center; gap: 14px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(9,9,10,.95);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-active);
+  transform: translateY(110%); transition: transform .35s var(--ease);
+}
+.dock.is-on { transform: none; }
+.dock__info { flex: 1; min-width: 0; }
+.dock__info b { display: block; font-family: var(--font-title); font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--gold-light); }
+.dock__info span { display: block; font-size: 11.5px; letter-spacing: 1.4px; color: var(--text-mute); }
+
+/* =========================================================
+   ANIMAÇÕES DE ENTRADA
+   ========================================================= */
+.reveal { opacity: 0; transform: translateY(26px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+.reveal.is-visible { opacity: 1; transform: none; }
+
+.anim { opacity: 0; transform: translateY(20px); animation: rise .8s var(--ease) forwards; }
+.d1 { animation-delay: .05s } .d2 { animation-delay: .18s } .d3 { animation-delay: .32s }
+.d4 { animation-delay: .46s } .d5 { animation-delay: .6s }
+@keyframes rise { to { opacity: 1; transform: none; } }
+
+/* =========================================================
+   BRASAS — a camada de atmosfera da página inteira
+   ---------------------------------------------------------
+   As faíscas da hero (.sparks) morrem na primeira dobra e o resto da página
+   fica seco. As brasas resolvem isso subindo pela viewport o tempo todo: é
+   `position: fixed`, então elas não rolam junto — sobem através do conteúdo.
+
+   O z-index é 205: ACIMA das seções (que vivem em 2) e logo abaixo do grão do
+   body (210). Embaixo não adiantaria — as seções pintam fundo opaco por cima
+   e as brasas sumiriam. Navbar (300), dock (280) e o botão do WhatsApp (290)
+   ficam por cima, para nenhuma faísca passar na frente de um controle.
+   ========================================================= */
+.brasas {
+  position: fixed; inset: 0; z-index: 205;
+  pointer-events: none; overflow: hidden;
+}
+/* o calor de onde as brasas saem: um clarão morno preso à base da viewport */
+.brasas::after {
+  content: ''; position: absolute; left: 50%; bottom: -12%; transform: translateX(-50%);
+  width: 150%; height: 34%;
+  background: radial-gradient(ellipse at 50% 100%,
+    rgba(196,112,63,.11), rgba(175,146,86,.045) 42%, transparent 72%);
+}
+
+.brasa {
+  position: absolute; bottom: -24px; left: var(--x);
+  width: var(--s); height: var(--s); border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #FFEFC9, var(--cor) 52%, transparent 74%);
+  box-shadow: 0 0 calc(var(--s) * 3) calc(var(--s) * .35) var(--cor);
+  opacity: 0;
+  animation: brasa-sobe var(--dur) linear infinite;
+  animation-delay: var(--atraso);
+  will-change: transform, opacity;
+}
+/* O bailado lateral vive nos keyframes, e não numa segunda animação sobre um
+   elemento aninhado: uma brasa é um ponto de luz de 3px, e um único
+   translate3d por passo já entrega a deriva sem dobrar o número de nós. */
+@keyframes brasa-sobe {
+  0%   { opacity: 0;              transform: translate3d(0, 0, 0)          scale(1); }
+  6%   { opacity: var(--op); }
+  25%  {                          transform: translate3d(16px, -26vh, 0)   scale(.94); }
+  50%  {                          transform: translate3d(-12px, -52vh, 0)  scale(.84); }
+  75%  { opacity: calc(var(--op) * .55);
+                                  transform: translate3d(14px, -78vh, 0)   scale(.68); }
+  100% { opacity: 0;              transform: translate3d(-6px, -104vh, 0)  scale(.5); }
+}
+
+/* faíscas douradas da hero */
+.sparks { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.spark {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--gold-light); box-shadow: 0 0 10px 2px rgba(201,174,122,.6);
+  opacity: 0; animation: float linear infinite;
+}
+@keyframes float {
+  0%   { opacity: 0; transform: translateY(0) scale(1); }
+  12%  { opacity: .85; }
+  85%  { opacity: .5; }
+  100% { opacity: 0; transform: translateY(-260px) scale(.5); }
+}
+
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
+@media (max-width: 1080px) {
+  .nav { display: none; }
+  .nav-count { margin-left: auto; }
+  .cards--3 { grid-template-columns: repeat(2, 1fr); }
+  .cards--4 { grid-template-columns: repeat(2, 1fr); }
+  .footer__inner { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 920px) {
+  .local { grid-template-columns: 1fr; max-width: 560px; }
+}
+
+@media (max-width: 720px) {
+  body { font-size: 16px; }
+  .section { padding: 72px 0; }
+  .container { width: calc(100% - 32px); }
+
+  .header__inner { width: calc(100% - 24px); }
+  .brand__logo { width: 128px; }
+  .nav-count { display: none; }
+
+  .hero { padding-top: calc(var(--nav-h) + 28px); min-height: auto; padding-bottom: 54px; }
+  .hero__bg i { opacity: .22; }
+  .hero__cta .btn { width: 100%; }
+  /* a etiqueta é longa: em tela estreita ela quebra em vez de vazar da caixa */
+  .tag { height: auto; min-height: 38px; padding: 8px 14px; font-size: 10.5px;
+         letter-spacing: 2px; line-height: 1.5; }
+
+  .selo { width: clamp(176px, 50vw, 220px); margin-top: 30px; }
+  .ficha { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 36px; }
+  .scroller { display: none; }
+
+  .crono-wrap { margin-top: -26px; }
+  .crono { width: calc(100% - 32px); padding: 24px 16px 22px; }
+  .crono__grid { gap: 7px; }
+  .crono__cel { padding: 12px 4px 10px; }
+  .crono__cel span { font-size: 9px; letter-spacing: 1.6px; }
+
+  .cards--3, .cards--4 { grid-template-columns: 1fr; }
+
+  /* As duas colunas viram uma só — mas manhã e tarde continuam separadas, com
+     os seus títulos. É a única leitura que sobrevive em 320px. */
+  .grade-dupla { grid-template-columns: 1fr; gap: 26px; }
+
+  /* A grade perde a coluna de horário à esquerda e o trilho: em 320px de
+     largura útil, "08h00" + trilho + caixa deixavam ~150px para o nome da
+     matéria, e "História do RN e Aspectos Geoeconômicos" quebrava em quatro
+     linhas. O horário volta como etiqueta dentro da própria caixa. */
+  .grade::before { display: none; }
+  .grade__item { grid-template-columns: 1fr; gap: 0; padding: 4px 0; }
+  .grade__item::before { display: none; }
+  .grade__hora { display: none; }
+  .grade__box { flex-wrap: wrap; padding: 12px 16px; gap: 3px 12px; min-height: 0; }
+  .grade__mat { flex: 1 1 100%; order: 2; }
+  .grade__n { order: 1; }
+  .grade__hora--mob {
+    display: inline; order: 1; text-align: left; margin-left: auto;
+    font-family: var(--font-title); font-size: 13.5px; font-weight: 800;
+    color: var(--gold-light); font-variant-numeric: tabular-nums;
+  }
+
+  .local__col { padding: 28px 22px; }
+  .oferta { padding: 34px 22px 30px; }
+  .oferta__faixa { right: -52px; top: 22px; font-size: 11px; }
+  .inclui { grid-template-columns: 1fr; }
+
+  .footer__inner { grid-template-columns: 1fr; gap: 30px; }
+  .footer__bar { flex-direction: column; }
+
+  .dock { display: flex; }
+  .btn--lg { height: 58px; padding: 0 26px; font-size: 13.5px; letter-spacing: 2px; }
+
+  /* o float sobe acima da barra fixa e vira só o disco */
+  .wa-float {
+    right: 16px; bottom: calc(84px + env(safe-area-inset-bottom));
+    height: 54px; padding: 0; width: 54px;
+  }
+  .wa-float__ico { width: 54px; }
+  .wa-float__txt { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important; scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+  .anim { opacity: 1; transform: none; }
+}
