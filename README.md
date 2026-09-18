@@ -90,7 +90,7 @@ uma contagem diferente da de quem está em Caruaru.
 
 ### O preço
 
-**R$ 69,00 → R$ 39,90 (−42%) · ou até 3x de R$ 14,05 no cartão.**
+**R$ 69,00 → R$ 39,90 (−42%) · ou até 3x de R$ 14,14 no cartão.**
 
 Aparece em **quatro lugares**, e todos precisam andar juntos:
 
@@ -105,7 +105,7 @@ No JSON-LD vai o valor à vista de propósito: o Google compara `price` com o qu
 aparece no checkout, e mandar o valor da parcela faria a marcação divergir da
 página.
 
-3 × R$ 14,05 dá R$ 42,15, e não R$ 39,90 — é o acréscimo do parcelamento. A
+3 × R$ 14,14 dá R$ 42,42, e não R$ 39,90 — é o acréscimo do parcelamento. A
 página diz isso em uma linha (`.oferta__asterisco`) em vez de deixar a conta
 aparente e sem explicação.
 
